@@ -5,7 +5,7 @@
 1) **Event monitor**
 - CGEventTap captures keyDown events.
 - Maintains a small rolling buffer of recent characters.
-- Detects trigger pattern: `.` + `[a-zA-Z]{1,}`.
+- Detects trigger pattern: `.` + >=1 letter; treat letters as live search query and show dropdown.
 
 2) **Phrase store**
 - Local-only for MVP.
