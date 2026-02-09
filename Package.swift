@@ -3,11 +3,16 @@
 import PackageDescription
 
 let package = Package(
-    name: "DotPhraseCore",
+    name: "dotphrase",
     products: [
         .library(name: "DotPhraseCore", targets: ["DotPhraseCore"]),
+        .executable(name: "dotphrase", targets: ["DotPhraseCLI"]),
     ],
     targets: [
         .target(name: "DotPhraseCore"),
+        .executableTarget(
+            name: "DotPhraseCLI",
+            dependencies: ["DotPhraseCore"]
+        ),
     ]
 )
