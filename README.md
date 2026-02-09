@@ -17,4 +17,9 @@ macOS-only, popup-first dotphrase/smartphrase text expansion (Epic-style), usabl
 
 ## Status
 
-Scaffolding only (repo created). Next: decide architecture + start a minimal event-tap + popup prototype.
+
+- Core module: `DotPhraseCore` (loads local JSON + ranks matches).
+- CLI: `swift run dotphrase <query>` to test search against `resources/phrases.sample.json`.
+
+Next: menu bar app (event tap + dropdown + insertion).
+
