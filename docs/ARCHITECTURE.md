@@ -19,7 +19,7 @@
 
 4) **Insertion**
 - Preferred MVP: pasteboard + synthesize Cmd+V.
-- Replace the typed trigger (delete back N chars) then paste.
+- Replace the typed trigger (delete back N chars, including the leading dot) then paste. (MVP confirmed)
 
 ## Permissions
 
