@@ -1,6 +1,7 @@
 import AppKit
 import Carbon
 import Foundation
+@preconcurrency import ApplicationServices
 import DotPhraseCore
 
 
@@ -101,6 +102,7 @@ final class EventTap {
         if s == "." {
             inQuery = true
             query = ""
+            Log.write("dot trigger")
             return
         }
 
@@ -108,6 +110,7 @@ final class EventTap {
             // require at least 1 letter to show dropdown
             if s.range(of: "^[A-Za-z]$", options: .regularExpression) != nil {
                 query.append(s)
+                Log.write("query_update=\(query)")
                 showMatches()
             } else {
                 // stop if non-letter
@@ -183,11 +186,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let popup = PopupController()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Prompt for Accessibility trust if needed (required for event tap + later insertion)
+        let axOpts: CFDictionary = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+        let axTrusted = AXIsProcessTrustedWithOptions(axOpts)
+        Log.write("AX trusted=\(axTrusted)")
         NSApp.setActivationPolicy(.accessory)
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         if let button = statusItem.button {
             button.title = "."
+            if !axTrusted {
+                button.title = "!."
+                button.toolTip = "dotphrase (needs Accessibility / Input Monitoring permission)"
+            }
             button.toolTip = "dotphrase"
         }
 
@@ -208,7 +219,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 guard let self else { return }
                 if let button = self.statusItem.button {
                     button.title = "!."
-                    button.toolTip = "dotphrase (needs Accessibility permission)"
+                    button.toolTip = "dotphrase (needs Accessibility / Input Monitoring permission)"
                 }
                 Log.write("EventTap start failed (likely missing Accessibility)")
                 Task { @MainActor in self.popup.hide() }
