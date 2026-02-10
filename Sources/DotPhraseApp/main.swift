@@ -217,6 +217,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusMenu.addItem(tapMenuItem)
         statusMenu.addItem(monitorMenuItem)
         statusMenu.addItem(NSMenuItem.separator())
+
+        let openAX = NSMenuItem(title: "Open Accessibility Settings", action: #selector(openAccessibilitySettings), keyEquivalent: "")
+        openAX.target = self
+        statusMenu.addItem(openAX)
+
+        let openIM = NSMenuItem(title: "Open Input Monitoring Settings", action: #selector(openInputMonitoringSettings), keyEquivalent: "")
+        openIM.target = self
+        statusMenu.addItem(openIM)
+
+        statusMenu.addItem(NSMenuItem.separator())
         statusMenu.addItem(NSMenuItem(title: "Log: /tmp/dotphrase.log", action: nil, keyEquivalent: ""))
         statusMenu.addItem(NSMenuItem.separator())
         statusMenu.addItem(NSMenuItem(title: "Quit", action: #selector(quit), keyEquivalent: "q"))
@@ -288,6 +298,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         NSLog("dotphrase menubar started")
+    }
+
+    @MainActor
+    @objc private func openAccessibilitySettings() {
+        // Privacy & Security → Accessibility
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
+    @MainActor
+    @objc private func openInputMonitoringSettings() {
+        // Privacy & Security → Input Monitoring
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent") {
+            NSWorkspace.shared.open(url)
+        }
     }
 
     @MainActor
