@@ -183,6 +183,7 @@ final class EventTap {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private var eventTap: EventTap?
+    private var globalMonitor: GlobalKeyMonitor?
     private let popup = PopupController()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -215,6 +216,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         do {
             let store = try PhraseStore.loadJSON(from: phrasesURL)
             let tap = EventTap(store: store)
+            let gmon = GlobalKeyMonitor(store: store)
             tap.onStartFailed = { [weak self] in
                 guard let self else { return }
                 if let button = self.statusItem.button {
@@ -255,6 +257,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 guard let self else { return }
                 Task { @MainActor in self.popup.hide() }
             }
+            // wire fallback global key monitor (requires Input Monitoring permission)
+            gmon.onMatches = tap.onMatches
+            gmon.onNavigate = tap.onNavigate
+            gmon.onConfirm = tap.onConfirm
+            gmon.onCancel = tap.onCancel
+            gmon.start()
+            self.globalMonitor = gmon
+
             tap.start()
             self.eventTap = tap
         } catch {
