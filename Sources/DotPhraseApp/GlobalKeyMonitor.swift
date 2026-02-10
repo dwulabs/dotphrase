@@ -23,14 +23,21 @@ final class GlobalKeyMonitor {
         self.store = store
     }
 
-    func start() {
-        guard monitor == nil else { return }
+    @discardableResult
+    func start() -> Bool {
+        guard monitor == nil else { return true }
 
         monitor = NSEvent.addGlobalMonitorForEvents(matching: [.keyDown]) { [weak self] event in
             self?.handle(event)
         }
 
+        if monitor == nil {
+            Log.write("GlobalKeyMonitor failed to start (likely missing Input Monitoring)")
+            return false
+        }
+
         Log.write("GlobalKeyMonitor started")
+        return true
     }
 
     func stop() {

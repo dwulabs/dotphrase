@@ -182,6 +182,11 @@ final class EventTap {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
+    private var statusMenu: NSMenu!
+    private var axMenuItem: NSMenuItem!
+    private var tapMenuItem: NSMenuItem!
+    private var monitorMenuItem: NSMenuItem!
+
     private var eventTap: EventTap?
     private var globalMonitor: GlobalKeyMonitor?
     private let popup = PopupController()
@@ -196,18 +201,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         if let button = statusItem.button {
             button.title = "."
+            button.toolTip = "dotphrase"
             if !axTrusted {
                 button.title = "!."
                 button.toolTip = "dotphrase (needs Accessibility / Input Monitoring permission)"
             }
-            button.toolTip = "dotphrase"
         }
 
-        let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: "Log: /tmp/dotphrase.log", action: nil, keyEquivalent: ""))
-        menu.addItem(NSMenuItem.separator())
-        menu.addItem(NSMenuItem(title: "Quit", action: #selector(quit), keyEquivalent: "q"))
-        statusItem.menu = menu
+        statusMenu = NSMenu()
+        let axStatus = axTrusted ? "OK" : "NOT GRANTED"
+        axMenuItem = NSMenuItem(title: "Accessibility: \(axStatus)", action: nil, keyEquivalent: "")
+        tapMenuItem = NSMenuItem(title: "Event tap: starting...", action: nil, keyEquivalent: "")
+        monitorMenuItem = NSMenuItem(title: "Input monitoring: starting...", action: nil, keyEquivalent: "")
+        statusMenu.addItem(axMenuItem)
+        statusMenu.addItem(tapMenuItem)
+        statusMenu.addItem(monitorMenuItem)
+        statusMenu.addItem(NSMenuItem.separator())
+        statusMenu.addItem(NSMenuItem(title: "Log: /tmp/dotphrase.log", action: nil, keyEquivalent: ""))
+        statusMenu.addItem(NSMenuItem.separator())
+        statusMenu.addItem(NSMenuItem(title: "Quit", action: #selector(quit), keyEquivalent: "q"))
+        statusItem.menu = statusMenu
 
         // Load sample phrases for now
         let cwd = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
@@ -219,6 +232,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let gmon = GlobalKeyMonitor(store: store)
             tap.onStartFailed = { [weak self] in
                 guard let self else { return }
+                self.tapMenuItem.title = "Event tap: FAILED"
                 if let button = self.statusItem.button {
                     button.title = "!."
                     button.toolTip = "dotphrase (needs Accessibility / Input Monitoring permission)"
@@ -262,10 +276,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             gmon.onNavigate = tap.onNavigate
             gmon.onConfirm = tap.onConfirm
             gmon.onCancel = tap.onCancel
-            gmon.start()
+            let gmonOK = gmon.start()
+            self.monitorMenuItem.title = gmonOK ? "Input monitoring: OK" : "Input monitoring: FAILED"
             self.globalMonitor = gmon
 
             tap.start()
+            self.tapMenuItem.title = "Event tap: OK"
             self.eventTap = tap
         } catch {
             NSLog("Failed to load phrases: \(error)")
