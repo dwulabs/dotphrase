@@ -7,6 +7,7 @@ import DotPhraseCore
 final class EventTap {
     private var tap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
+    var onStartFailed: (() -> Void)?
 
     private var buffer: String = ""
     private var inQuery: Bool = false
@@ -48,6 +49,7 @@ final class EventTap {
 
         guard let tap else {
             NSLog("EventTap: failed to create (permissions likely missing)")
+            onStartFailed?()
             return
         }
 
@@ -198,6 +200,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         do {
             let store = try PhraseStore.loadJSON(from: phrasesURL)
             let tap = EventTap(store: store)
+            tap.onStartFailed = { [weak self] in
+                guard let self else { return }
+                if let button = self.statusItem.button {
+                    button.title = "!."
+                    button.toolTip = "dotphrase (needs Accessibility permission)"
+                }
+                self.popup.hide()
+            }
             tap.onMatches = { [weak self] query, matches in
                 guard let self else { return }
                 if matches.isEmpty {
