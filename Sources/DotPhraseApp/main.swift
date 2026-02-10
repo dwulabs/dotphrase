@@ -3,6 +3,7 @@ import Carbon
 import Foundation
 import DotPhraseCore
 
+
 final class EventTap {
     private var tap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
@@ -12,6 +13,11 @@ final class EventTap {
     private var query: String = ""
 
     private let store: PhraseStore
+
+    var onMatches: ((String, [Phrase]) -> Void)?
+    var onNavigate: ((Int) -> Void)?
+    var onConfirm: (() -> Void)?
+    var onCancel: (() -> Void)?
 
     init(store: PhraseStore) {
         self.store = store
@@ -55,14 +61,24 @@ final class EventTap {
     private func handle(event: CGEvent) {
         guard let s = keyString(event) else { return }
 
+        let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
+        if inQuery {
+            if keyCode == 126 { onNavigate?(-1); return } // up
+            if keyCode == 125 { onNavigate?(+1); return } // down
+        }
+
         // basic controls
         if s == "\u{1b}" { // Esc
             inQuery = false
             query = ""
+            onCancel?()
             return
         }
 
         if s == "\r" { // Enter
+            if inQuery {
+                onConfirm?()
+            }
             inQuery = false
             query = ""
             return
@@ -98,14 +114,12 @@ final class EventTap {
     }
 
     private func showMatches() {
-        guard query.count >= 1 else { return }
-        let matches = store.search(query, limit: 5)
-        if matches.isEmpty {
-            NSLog("dotphrase query=\(query) (no matches)")
-        } else {
-            let list = matches.map { "." + $0.trigger }.joined(separator: ", ")
-            NSLog("dotphrase query=\(query) matches: \(list)")
+        guard query.count >= 1 else {
+            onMatches?(query, [])
+            return
         }
+        let matches = store.search(query, limit: 8)
+        onMatches?(query, matches)
     }
 
     private func keyString(_ event: CGEvent) -> String? {
@@ -158,9 +172,11 @@ final class EventTap {
     }
 }
 
+@MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private var eventTap: EventTap?
+    private let popup = PopupController()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
@@ -182,6 +198,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         do {
             let store = try PhraseStore.loadJSON(from: phrasesURL)
             let tap = EventTap(store: store)
+            tap.onMatches = { [weak self] query, matches in
+                guard let self else { return }
+                if matches.isEmpty {
+                    Task { @MainActor in self.popup.hide() }
+                    return
+                }
+                // TEMP: anchor near top-left; caret anchoring later
+                let pt = NSPoint(x: 40, y: NSScreen.main?.frame.height ?? 600 - 120)
+                Task { @MainActor in
+                    self.popup.show(at: pt, matches: matches) { phrase in
+                        // insertion later; for now just log selection
+                        NSLog("selected .%s", phrase.trigger)
+                    }
+                }
+            }
+            tap.onNavigate = { [weak self] delta in
+                guard let self else { return }
+                Task { @MainActor in self.popup.moveSelection(delta: delta) }
+            }
+            tap.onConfirm = { [weak self] in
+                guard let self else { return }
+                Task { @MainActor in self.popup.confirmSelection() }
+            }
+            tap.onCancel = { [weak self] in
+                guard let self else { return }
+                Task { @MainActor in self.popup.hide() }
+            }
             tap.start()
             self.eventTap = tap
         } catch {
