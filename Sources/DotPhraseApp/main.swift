@@ -141,8 +141,8 @@ final class EventTap {
         }
 
         // translate keycode -> unicode
-        guard let source = TISCopyCurrentKeyboardLayoutInputSource().takeRetainedValue() as? TISInputSource,
-              let layoutData = TISGetInputSourceProperty(source, kTISPropertyUnicodeKeyLayoutData) else {
+        let source = TISCopyCurrentKeyboardLayoutInputSource().takeRetainedValue()
+        guard let layoutData = TISGetInputSourceProperty(source, kTISPropertyUnicodeKeyLayoutData) else {
             return nil
         }
 
