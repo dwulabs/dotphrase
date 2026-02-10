@@ -67,8 +67,8 @@ final class PopupController: NSObject, NSTableViewDataSource, NSTableViewDelegat
 
         if !panel.isVisible {
             panel.setFrameOrigin(point)
-            panel.orderFrontRegardless()
         }
+        panel.orderFrontRegardless()
     }
 
     func hide() {

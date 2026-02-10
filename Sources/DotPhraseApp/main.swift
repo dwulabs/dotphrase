@@ -49,6 +49,7 @@ final class EventTap {
 
         guard let tap else {
             NSLog("EventTap: failed to create (permissions likely missing)")
+            Log.write("EventTap failed to create")
             onStartFailed?()
             return
         }
@@ -58,6 +59,7 @@ final class EventTap {
         CGEvent.tapEnable(tap: tap, enable: true)
 
         NSLog("EventTap: started")
+        Log.write("EventTap started")
     }
 
     private func handle(event: CGEvent) {
@@ -190,6 +192,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         let menu = NSMenu()
+        menu.addItem(NSMenuItem(title: "Log: /tmp/dotphrase.log", action: nil, keyEquivalent: ""))
+        menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "Quit", action: #selector(quit), keyEquivalent: "q"))
         statusItem.menu = menu
 
@@ -206,10 +210,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     button.title = "!."
                     button.toolTip = "dotphrase (needs Accessibility permission)"
                 }
-                self.popup.hide()
+                Log.write("EventTap start failed (likely missing Accessibility)")
+                Task { @MainActor in self.popup.hide() }
             }
             tap.onMatches = { [weak self] query, matches in
                 guard let self else { return }
+                if let button = self.statusItem.button {
+                    button.title = "." + query.lowercased()
+                }
+                Log.write("query=\(query) matches=\(matches.count)")
                 if matches.isEmpty {
                     Task { @MainActor in self.popup.hide() }
                     return
