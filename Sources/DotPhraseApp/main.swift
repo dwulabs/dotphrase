@@ -25,7 +25,8 @@ final class EventTap {
         self.store = store
     }
 
-    func start() {
+    @discardableResult
+    func start() -> Bool {
         let mask = (1 << CGEventType.keyDown.rawValue)
 
         let callback: CGEventTapCallBack = { proxy, type, event, refcon in
@@ -52,7 +53,7 @@ final class EventTap {
             NSLog("EventTap: failed to create (permissions likely missing)")
             Log.write("EventTap failed to create")
             onStartFailed?()
-            return
+            return false
         }
 
         runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
@@ -61,6 +62,7 @@ final class EventTap {
 
         NSLog("EventTap: started")
         Log.write("EventTap started")
+        return true
     }
 
     private func handle(event: CGEvent) {
@@ -290,9 +292,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.monitorMenuItem.title = gmonOK ? "Input monitoring: OK" : "Input monitoring: FAILED"
             self.globalMonitor = gmon
 
-            tap.start()
-            self.tapMenuItem.title = "Event tap: OK"
-            self.eventTap = tap
+            let tapOK = tap.start()
+            self.tapMenuItem.title = tapOK ? "Event tap: OK" : "Event tap: FAILED"
+            self.eventTap = tapOK ? tap : nil
         } catch {
             NSLog("Failed to load phrases: \(error)")
         }
