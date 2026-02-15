@@ -1,0 +1,24 @@
+# GitHub Actions workflow template for dotphrase.
+#
+# NOTE: GitHub blocks OAuth tokens without the `workflow` scope from pushing
+# changes under `.github/workflows/`. If you want to enable CI, copy this file to:
+#   .github/workflows/ci.yml
+# and push using credentials that have `workflow` scope.
+
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  smoke:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Swift version
+        run: swift --version
+
+      - name: Smoke
+        run: bash ./scripts/smoke.sh

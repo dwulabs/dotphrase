@@ -10,6 +10,9 @@ swift --version
 echo "-- swift build"
 swift build -c debug
 
+echo "-- build menubar executable"
+swift build -c debug --product dotphrase-menubar
+
 echo "-- CLI basic search"
 OUT="$(swift run -c debug dotphrase gm)"
 echo "$OUT"
